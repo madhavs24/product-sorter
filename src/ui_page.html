@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product sorter</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #1c1915;
+    --muted: #5e584f;
+    --line: #e4dfd4;
+    --paper: #f6f3ec;
+    --card: #fffcf7;
+    --accent: #1f6b45;
+    --accent-ink: #fff;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 32px; font-weight: 650; letter-spacing: -0.03em; margin: 0 0 8px; }
+  .lede { margin: 0 0 28px; color: var(--muted); max-width: 38rem; line-height: 1.45; }
+  .drop {
+    border: 1.5px dashed #c9c1b2;
+    background: var(--card);
+    border-radius: 16px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px 20px;
+    cursor: pointer;
+  }
+  .drop.over { border-color: var(--accent); background: #f3faf6; }
+  .drop strong { font-size: 18px; }
+  .drop p { margin: 8px 0 0; color: var(--muted); }
+  button, .button {
+    appearance: none;
+    border: 0;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: 999px;
+    padding: 12px 18px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button:disabled { opacity: 0.55; cursor: default; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; }
+  .status { margin-top: 22px; }
+  .log {
+    margin-top: 14px;
+    background: #221f1b;
+    color: #f4efe6;
+    border-radius: 12px;
+    padding: 14px 16px;
+    min-height: 72px;
+    max-height: 180px;
+    overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+  }
+  .grid { display: grid; gap: 14px; margin-top: 22px; }
+  .card {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .thumbs { display: flex; gap: 6px; overflow: hidden; }
+  .thumbs img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; background: #eee; }
+  .card h2 { margin: 0 0 4px; font-size: 18px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .card p { margin: 0; line-height: 1.4; }
+  .note { color: var(--muted); margin-top: 10px; }
+  @media (max-width: 700px) {
+    .card { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sort a folder of product photos</h1>
+  <p class="lede">Choose a folder of product photos. A sorted folder is created inside it, with one subfolder per product. Your original photos stay where they are.</p>
+
+  <div class="drop" id="drop">
+    <strong>Choose a photo folder</strong>
+    <p>A sorted folder will be created inside it</p>
+  </div>
+
+  <section class="status" id="status" hidden>
+    <div class="log" id="log"></div>
+    <div class="row" id="next" hidden></div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+<script>
+const drop = document.querySelector("#drop");
+const statusEl = document.querySelector("#status");
+const logEl = document.querySelector("#log");
+const nextEl = document.querySelector("#next");
+const grid = document.querySelector("#grid");
+
+let jobId = null;
+let pollTimer = null;
+let choosing = false;
+
+drop.addEventListener("click", () => chooseFolder());
+drop.addEventListener("dragover", (event) => { event.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (event) => {
+  event.preventDefault();
+  drop.classList.remove("over");
+  chooseFolder();
+});
+
+function setLog(lines) {
+  statusEl.hidden = false;
+  logEl.textContent = (lines || []).join("\n");
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function thumbs(images) {
+  return (images || []).map((src) => `<img src="${src}" alt="">`).join("");
+}
+function renderPreviews(previews) {
+  grid.innerHTML = (previews || []).map((product) => `
+    <article class="card">
+      <div class="thumbs">${thumbs(product.images)}</div>
+      <div>
+        <h2>${product.id}</h2>
+        <div class="meta">${product.count} photo${product.count === 1 ? "" : "s"}</div>
+      </div>
+    </article>`).join("");
+}
+function renderProducts(products) {
+  grid.innerHTML = (products || []).map((product) => `
+    <article class="card">
+      <div class="thumbs">${thumbs(product.images)}</div>
+      <div>
+        <h2>${escapeHtml(product.title || product.folder)}</h2>
+        <div class="meta">${escapeHtml([product.category, product.condition].filter(Boolean).join(" · ") || "Listing not drafted yet")}</div>
+        <p>${escapeHtml(product.description || "")}</p>
+      </div>
+    </article>`).join("");
+}
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+
+async function chooseFolder() {
+  if (choosing) return;
+  choosing = true;
+  grid.innerHTML = "";
+  nextEl.hidden = true;
+  setLog(["Choose the photo folder in the window that just opened."]);
+  try {
+    const response = await fetch("/api/choose", { method: "POST" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "Could not open that folder");
+    if (payload.cancelled) {
+      setLog(["No folder chosen."]);
+      return;
+    }
+    jobId = payload.id;
+    setLog([
+      payload.path,
+      "A sorted folder will be created inside it.",
+      "Reading photos…",
+    ]);
+    const start = await fetch(`/api/jobs/${jobId}/group`, { method: "POST" });
+    if (!start.ok) {
+      const problem = await start.json().catch(() => ({}));
+      throw new Error(problem.error || "Could not start grouping");
+    }
+    watch();
+  } catch (error) {
+    setLog([error.message]);
+  } finally {
+    choosing = false;
+  }
+}
+
+function watch() {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(refresh, 800);
+}
+async function refresh() {
+  if (!jobId) return;
+  const response = await fetch(`/api/jobs/${jobId}`);
+  if (!response.ok) return;
+  const job = await response.json();
+  setLog(job.logs);
+  if (job.status === "grouped") {
+    clearInterval(pollTimer);
+    renderPreviews(job.result.previews);
+    showNext(job.result.plan);
+  } else if (job.status === "done") {
+    clearInterval(pollTimer);
+    renderProducts(job.result.products);
+    nextEl.hidden = false;
+    const where = job.result.sorted_path ? `<span class="note">${escapeHtml(job.result.sorted_path)}</span>` : "";
+    nextEl.innerHTML = `<button type="button" id="open">Open the sorted folder</button>${where}`;
+    document.querySelector("#open").addEventListener("click", () => fetch("/api/reveal", { method: "POST" }));
+  } else if (job.status === "error") {
+    clearInterval(pollTimer);
+    setLog([...(job.logs || []), job.error || "Something went wrong"]);
+  }
+}
+function showNext(plan) {
+  nextEl.hidden = false;
+  const cost = plan.cost ? `About $${plan.cost.toFixed(2)}.` : "No new vision calls.";
+  if (plan.has_key) {
+    nextEl.innerHTML = `<button type="button" id="titles">Draft listings and save into the photo folder</button><span class="note">${plan.products} products. ${cost}</span>`;
+    document.querySelector("#titles").addEventListener("click", () => finish(true));
+  } else {
+    nextEl.innerHTML = `<button type="button" id="folders">Save folders into the photo folder</button><span class="note">Add ANTHROPIC_API_KEY to .env to draft titles. ${plan.products} products are grouped.</span>`;
+    document.querySelector("#folders").addEventListener("click", () => finish(false));
+  }
+}
+async function finish(titles) {
+  nextEl.innerHTML = "";
+  await fetch(`/api/jobs/${jobId}/finish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titles }),
+  });
+  watch();
+}
+
+</script>
+</body>
+</html>

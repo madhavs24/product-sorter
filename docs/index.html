@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product sorter</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #1c1915;
+    --muted: #5e584f;
+    --line: #e4dfd4;
+    --paper: #f6f3ec;
+    --card: #fffcf7;
+    --accent: #1f6b45;
+    --accent-ink: #fff;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 32px; font-weight: 650; letter-spacing: -0.03em; margin: 0 0 8px; }
+  .lede { margin: 0 0 28px; color: var(--muted); max-width: 40rem; line-height: 1.45; }
+  .drop {
+    border: 1.5px dashed #c9c1b2;
+    background: var(--card);
+    border-radius: 16px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px 20px;
+    cursor: pointer;
+  }
+  .drop.over { border-color: var(--accent); background: #f3faf6; }
+  .drop strong { font-size: 18px; }
+  .drop p { margin: 8px 0 0; color: var(--muted); }
+  button {
+    appearance: none;
+    border: 0;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: 999px;
+    padding: 12px 18px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button:disabled { opacity: 0.55; cursor: default; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; }
+  .status { margin-top: 22px; color: var(--muted); }
+  .grid { display: grid; gap: 14px; margin-top: 22px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .card h2 { margin: 0 0 10px; font-size: 16px; }
+  .thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .thumbs img { width: 92px; height: 92px; object-fit: cover; border-radius: 8px; background: #eee; }
+  .names { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+  .warn { color: #8a3b12; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Product sorter</h1>
+  <p class="lede">Drop a folder of product photos. Shots of the same item stay together, including other angles, soles, tags, and fabric close-ups. Each product gets at most 5 photos. Nothing is uploaded.</p>
+  <div class="drop" id="drop">
+    <strong>Drop a photo folder</strong>
+    <p>or click to choose one. iPhone HEIC is fine.</p>
+  </div>
+  <input id="picker" type="file" accept="image/*,.heic,.heif" webkitdirectory multiple hidden>
+  <div class="row">
+    <button id="download" hidden>Download sorted folder</button>
+    <button id="again" class="secondary" hidden>Sort another folder</button>
+  </div>
+  <p class="status" id="status"></p>
+  <div class="grid" id="grid"></div>
+</main>
+<script src="vendor/exifr.js"></script>
+<script src="vendor/fflate.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

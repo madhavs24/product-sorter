@@ -1,0 +1,8 @@
+.venv/
+.env
+working/
+output/
+inbox/
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,8 @@
+Pillow>=10.4
+pillow-heif>=0.18
+imagehash>=4.3
+numpy>=1.26
+scikit-learn>=1.4
+anthropic>=0.40
+python-dotenv>=1.0
+tenacity>=8.2
