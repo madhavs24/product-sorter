@@ -84,7 +84,7 @@ python sorter.py group --threshold 120
 python sorter.py group --dry-run
 ```
 
-Photos are walked in the order they were taken. Capture time includes the camera’s millisecond fraction (`SubSecTimeOriginal`), so two shots in the same second stay in order. A new angle of the same item stays in the same product, including a sole, tag, lining, or a close-up of the fabric. A new product starts when the next photo is a different item. That includes another pair of shoes or another piece of clothing set down on the same table, not only a long pause. A pause of about **90 seconds** still separates products whose photos look alike (`PRODUCT_GAP_SECONDS` in `config.py`). A product never keeps more than **5** photos; a longer run is split at the weakest join (`MAX_PHOTOS_PER_PRODUCT`).
+Photos are walked in the order they were taken. Capture time includes the camera’s millisecond fraction (`SubSecTimeOriginal`), so two shots in the same second stay in order. A new angle of the same item stays in the same product, including a sole, tag, lining, or a close-up of the fabric. A new product starts when the next photo is a different item. That includes another pair of shoes or another piece of clothing set down on the same table, not only a long pause. A pause of about **90 seconds** still separates products whose photos look alike (`PRODUCT_GAP_SECONDS` in `config.py`). Extra angles of the same item stay in that product even when there are more than five.
 
 Shots with no capture time are still walked in filename order, spaced like a normal burst, so a color change can start a new product. A photo that cannot be read does not get glued to everything that follows.
 

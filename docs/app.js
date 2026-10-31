@@ -72,9 +72,11 @@ function usable(file) {
   return true
 }
 
-async function sha1(file) {
-  const digest = await crypto.subtle.digest("SHA-1", await file.arrayBuffer())
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+async function quickId(file) {
+  const head = await file.slice(0, 65536).arrayBuffer()
+  const digest = await crypto.subtle.digest("SHA-1", head)
+  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+  return `${hex}:${file.size}`
 }
 
 async function captureTime(file) {
@@ -108,9 +110,14 @@ async function captureTime(file) {
 async function bitmapOf(file) {
   let blob = file
   if (await isHeic(file)) {
-    blob = await heicTo({ blob: file, type: "image/jpeg", quality: 0.92 })
+    blob = await heicTo({ blob: file, type: "image/jpeg", quality: 0.72 })
   }
-  return createImageBitmap(blob, { imageOrientation: "from-image" })
+  const options = { imageOrientation: "from-image", resizeWidth: 512, resizeQuality: "high" }
+  try {
+    return await createImageBitmap(blob, options)
+  } catch {
+    return createImageBitmap(blob, { imageOrientation: "from-image" })
+  }
 }
 
 async function sortFiles(files) {
@@ -130,7 +137,7 @@ async function sortFiles(files) {
     const file = chosen[index]
     status.textContent = `Reading ${index + 1} of ${chosen.length}`
     try {
-      const hash = await sha1(file)
+      const hash = await quickId(file)
       if (seen.has(hash)) continue
       seen.add(hash)
       const time = await captureTime(file)
@@ -162,7 +169,7 @@ async function sortFiles(files) {
 
 function render(groups, skipped) {
   const photos = groups.reduce((sum, group) => sum + group.length, 0)
-  status.textContent = `${groups.length} products from ${photos} photos. Each product has at most 5.`
+  status.textContent = `${groups.length} products from ${photos} photos.`
   if (skipped.length) {
     const note = document.createElement("p")
     note.className = "warn"

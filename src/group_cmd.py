@@ -258,7 +258,7 @@ def _cluster_by_time(items: list[dict], pause_seconds: float) -> list[list[dict]
             groups[-1].append(item)
         if current_time is not None:
             previous_time = current_time
-    return _enforce_photo_cap(_attach_leading_details(groups))
+    return _attach_leading_details(groups)
 
 
 def _attach_leading_details(groups: list[list[dict]]) -> list[list[dict]]:
@@ -293,43 +293,6 @@ def _attach_leading_details(groups: list[list[dict]]) -> list[list[dict]]:
         kept.append(group)
         index += 1
     return kept
-
-
-def _link_score(previous: dict, current: dict) -> float:
-    """Lower means this is the join most likely to be two different products."""
-    try:
-        distance = imagehash.hex_to_hash(previous["phash"]) - imagehash.hex_to_hash(current["phash"])
-    except (ValueError, TypeError, KeyError):
-        distance = 64
-    previous_cues = _shot_cues(previous)
-    current_cues = _shot_cues(current)
-    cosine = 0.0
-    if previous_cues is not None and current_cues is not None:
-        cosine = float(np.dot(previous_cues[0], current_cues[0]))
-    # A near-duplicate is the same shutter moment. Split a different join first.
-    if distance <= 12:
-        return 1.0 + cosine
-    return cosine
-
-
-def _split_to_cap(group: list[dict]) -> list[list[dict]]:
-    """No product keeps more than MAX_PHOTOS_PER_PRODUCT shots.
-
-    The cut is the weakest join, so a lining shot peels off before a real
-    angle of the same pair does.
-    """
-    limit = config.MAX_PHOTOS_PER_PRODUCT
-    if len(group) <= limit:
-        return [group]
-    cut = min(range(len(group) - 1), key=lambda index: _link_score(group[index], group[index + 1]))
-    return _split_to_cap(group[: cut + 1]) + _split_to_cap(group[cut + 1 :])
-
-
-def _enforce_photo_cap(groups: list[list[dict]]) -> list[list[dict]]:
-    capped: list[list[dict]] = []
-    for group in groups:
-        capped.extend(_split_to_cap(group))
-    return capped
 
 
 def _cluster_by_hash(items: list[dict], threshold: float) -> list[list[dict]]:
@@ -473,8 +436,8 @@ def render_contact_sheet(rows: list[dict], threshold: float) -> str:
   <p>{len(rows)} products. Different angles of one item, including soles, tags,
   and linings, are kept together. A new box starts when the next photo is a
   different item, including another piece of clothing or another pair of shoes
-  on the same table. A box never holds more than 5 photos. If a photo is in
-  the wrong box, move the image file between the <code>output/product-XXX</code>
+  on the same table. If a photo is in the wrong box, move the image file
+  between the <code>output/product-XXX</code>
   folders in Finder. Do not re-run <code>group</code> after fixing — it
   rebuilds these folders.</p>
 </header>

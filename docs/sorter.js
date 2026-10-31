@@ -4,7 +4,6 @@
  */
 
 export const PAUSE_SECONDS = 90
-export const MAX_PHOTOS = 5
 
 function parseTime(value) {
   if (value == null || value === "") return null
@@ -247,27 +246,6 @@ function matchesEarlier(group, item) {
   return false
 }
 
-function linkScore(previous, current) {
-  const distance = hamming(previous.phash, current.phash)
-  const cosine = previous.cues && current.cues ? dot(previous.cues.v, current.cues.v) : 0
-  if (distance <= 12) return 1 + cosine
-  return cosine
-}
-
-function splitToCap(group) {
-  if (group.length <= MAX_PHOTOS) return [group]
-  let cut = 0
-  let best = Infinity
-  for (let i = 0; i < group.length - 1; i++) {
-    const score = linkScore(group[i], group[i + 1])
-    if (score < best) {
-      best = score
-      cut = i
-    }
-  }
-  return splitToCap(group.slice(0, cut + 1)).concat(splitToCap(group.slice(cut + 1)))
-}
-
 function attachLeading(groups) {
   const kept = []
   let index = 0
@@ -306,7 +284,7 @@ function clusterTimed(items, pause) {
     }
     if (item.time != null) previousTime = item.time
   }
-  return attachLeading(groups).flatMap(splitToCap)
+  return attachLeading(groups)
 }
 
 export function clusterItems(items, pause = PAUSE_SECONDS) {

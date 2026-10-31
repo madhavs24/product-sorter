@@ -40,10 +40,6 @@ ALLOWED_CONDITIONS = ["Brand New", "Like New", "Used"]
 # Override with `group --threshold` (value is seconds). Higher = looser.
 PRODUCT_GAP_SECONDS = 90.0
 
-# One product is a short burst. More than this many photos means two items
-# got merged, so the group is split at its weakest join.
-MAX_PHOTOS_PER_PRODUCT = 5
-
 # Used only when photos have no capture time. Hamming distance on pHash.
 HASH_ONLY_THRESHOLD = 18.0
 DHASH_WEIGHT = 0.25
